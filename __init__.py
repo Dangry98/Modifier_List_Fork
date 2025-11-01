@@ -72,6 +72,16 @@ def register():
         kmi = km.keymap_items.new("object.add_modifier_menu", 'A', 'PRESS', shift=True)
         addon_keymaps.append((km, kmi))
 
+        km = wm.keyconfigs.addon.keymaps.new(name='Property Editor', space_type='PROPERTIES')
+        kmi = km.keymap_items.new("object.ml_modifier_copy", 'C', 'PRESS', ctrl=True)
+        kmi.properties.copy = True
+        addon_keymaps.append((km, kmi))
+
+        km = wm.keyconfigs.addon.keymaps.new(name='Property Editor', space_type='PROPERTIES')
+        kmi = km.keymap_items.new("object.ml_modifier_copy", 'V', 'PRESS', ctrl=True)
+        kmi.properties.past = True
+        addon_keymaps.append((km, kmi))
+
         # this only works on Windows
         if os.name == 'nt':
             km = wm.keyconfigs.addon.keymaps.new(name='Property Editor', space_type='PROPERTIES')

@@ -2078,8 +2078,20 @@ class DATA_PT_modifiers:
             for i, hide_in_mod in enumerate(inputs_hide_in_modifier):
                 if i < len(info_per_input):
                     info_per_input[i]["hide_in_modifier"] = hide_in_mod
+                    
+        def get_inputs_is_panel_toggle(node_tree):
+            inputs_is_panel_toggle = [item.is_panel_toggle for item in node_tree.interface.items_tree
+                                       if item.item_type == 'SOCKET'
+                                       if item.in_out in {'INPUT'}
+                                       if item.socket_type != 'NodeSocketGeometry']
+                                       
+            for i, hide_in_mod in enumerate(inputs_is_panel_toggle):
+                if i < len(info_per_input):
+                    info_per_input[i]["is_panel_toggle"] = hide_in_mod
 
         get_inputs_hide_in_modifier(node_group)
+        if BLENDER_VERSION_MAJOR_POINT_MINOR >= 5.0: # new is_panel_toggle property
+            get_inputs_is_panel_toggle(node_group)
 
         datablock_input_info_per_type = {
             "COLLECTION": {"data_collection": "collections", "icon": "OUTLINER_COLLECTION"},
@@ -2139,7 +2151,7 @@ class DATA_PT_modifiers:
                 layout.separator(factor=0.5)
         
         def get_node_panels(tree):
-            return [item.name for item in tree.interface.items_tree if item.item_type == 'PANEL']
+            return [item for item in tree.interface.items_tree if item.item_type == 'PANEL']
 
         def get_socket_and_parent_name(tree):
             return [item.parent.name if item.parent.name else 'no_panel' for item in tree.interface.items_tree if item.item_type == 'SOCKET' and item.in_out == 'INPUT' and item.socket_type != 'NodeSocketGeometry']
@@ -2156,8 +2168,8 @@ class DATA_PT_modifiers:
         def is_panel_default_closed(node_tree):
             return any(item.default_closed for item in node_tree.interface.items_tree if item.item_type == 'PANEL')
 
-        all_panel_name_list = get_node_panels(node_group)
-        amount_of_panels = len(all_panel_name_list)
+        all_panel_list = get_node_panels(node_group)
+        amount_of_panels = len(all_panel_list)
         socket_has_panel_and_panel_name = get_socket_and_parent_name(node_group)
         socket_panel_list = tree_socket_or_panel_order(node_group)
         panel_id = 0
@@ -2168,25 +2180,31 @@ class DATA_PT_modifiers:
             for item in socket_panel_list:
                 if item == 'SOCKET':
                     current_item += 1
-
+   
                 if item == 'SOCKET' and socket_has_panel_and_panel_name[current_item] == 'no_panel':
                     if info_per_input:
                         get_socket_prop_id(info_per_input.pop(0))
                         
-                elif item == 'PANEL':
-                      
-                    header, panel = layout.panel(idname=all_panel_name_list[panel_id], default_closed=is_panel_default_closed(node_group))
-                    header.label(text=all_panel_name_list[panel_id])
+                elif item == 'PANEL':    
+                    header, panel = layout.panel(idname=str(all_panel_list[panel_id]), default_closed=is_panel_default_closed(node_group))
+                    header.label(text=all_panel_list[panel_id].name)
                     panel_open = bool(panel)
+                    if BLENDER_VERSION_MAJOR_POINT_MINOR >= 5.0: # new is_panel_toggle property
+                        if info_per_input[0]["is_panel_toggle"]:
+                            header.alignment = 'LEFT'
+                            header.prop(md, f'["{str(info_per_input[0]["prop_id"])}"]', text=str(info_per_input[0]["name"]))
 
+                    # if is_panel_toggle:
+                    #     is_panel_toggle
+                    
                     if panel_open:
-                        num_sockets_in_panel = sum(1 for item in node_group.interface.items_tree if item.item_type == 'SOCKET' and item.parent.name == all_panel_name_list[panel_id])
+                        num_sockets_in_panel = sum(1 for item in node_group.interface.items_tree if item.item_type == 'SOCKET' and item.parent == all_panel_list[panel_id])
                         for i in range(num_sockets_in_panel):
                             if info_per_input:
                                 get_socket_prop_id(info_per_input.pop(0))
                         removed_sockets.append(num_sockets_in_panel)
                     else:
-                        num_sockets_in_panel = sum(1 for item in node_group.interface.items_tree if item.item_type == 'SOCKET' and item.parent.name == all_panel_name_list[panel_id])
+                        num_sockets_in_panel = sum(1 for item in node_group.interface.items_tree if item.item_type == 'SOCKET' and item.parent == all_panel_list[panel_id])
                         info_per_input = info_per_input[num_sockets_in_panel:]
 
                     panel_id = (panel_id + 1) % amount_of_panels
@@ -2294,21 +2312,25 @@ class DATA_PT_modifiers:
                 layout.label(text="Named Attributes WIP")    
 
 
-            if BLENDER_VERSION_MAJOR_POINT_MINOR > 4.0:   
-                header, panel_manage = layout.panel(idname="Manage",  default_closed=True)
-                header.label(text="Manage")
-                if panel_manage:
-                    # header, panel_bake = layout.panel(idname="Bake", default_closed=True)
-                    # header.label(text="Bake")
-                    # if panel_bake:
-                    bake_directory()
-                    
-                    # have not figured out how to get the used attributes
+            if BLENDER_VERSION_MAJOR_POINT_MINOR > 4.0:  
+                draw_mange = True 
+                if BLENDER_VERSION_MAJOR_POINT_MINOR >= 5.0:
+                    draw_mange = md.node_group.show_modifier_manage_panel
+                if draw_mange:
+                    header, panel_manage = layout.panel(idname="Manage",  default_closed=True)
+                    header.label(text="Manage")
+                    if panel_manage:
+                        # header, panel_bake = layout.panel(idname="Bake", default_closed=True)
+                        # header.label(text="Bake")
+                        # if panel_bake:
+                        bake_directory()
+                        
+                        # have not figured out how to get the used attributes
 
-                    # header, panel_named_attributes = layout.panel(idname="Named Attributes", default_closed=True)
-                    # header.label(text="Named Attributes")
-                    # # if panel_named_attributes:
-                    # #     named_attributes()
+                        # header, panel_named_attributes = layout.panel(idname="Named Attributes", default_closed=True)
+                        # header.label(text="Named Attributes")
+                        # # if panel_named_attributes:
+                        # #     named_attributes()
                         
         get_outputs_prop_id()
 

@@ -38,43 +38,32 @@ list_of_frozen_modifiers = []
 # =======================================================================
 
 def _favourite_modifier_buttons(layout):
-    """Adds 2 or 3 buttons per row according to addon preferences.
-
+    """Adds 2, 3, or 4 buttons per row according to addon preferences.
+    
     Empty rows in preferences are skipped."""
 
     prefs = bpy.context.preferences.addons[base_package].preferences
-    fav_names_icons_types_iter = favourite_modifiers_names_icons_types()
+    fav_names_icons_types = list(favourite_modifiers_names_icons_types())
+    
+    buttons_per_row = int(prefs.favourites_per_row)  
+    show_icons = prefs.use_icons_in_favourites
 
-    place_three_per_row = prefs.favourites_per_row == '3'
+    for i in range(0, len(fav_names_icons_types), buttons_per_row):
+        row_modifiers = fav_names_icons_types[i:i + buttons_per_row]
 
-    for name, icon, mod in fav_names_icons_types_iter:
-        next_mod_1 = next(fav_names_icons_types_iter)
-        if place_three_per_row:
-            next_mod_2 = next(fav_names_icons_types_iter)
-
-        if name or next_mod_1[0] or (place_three_per_row and next_mod_2[0]):
+        if any(mod[0] for mod in row_modifiers):
             row = layout.row(align=True)
-
-            if name:
-                icon = icon if prefs.use_icons_in_favourites else 'NONE'
-                row.operator("object.ml_modifier_add", text=name, icon=icon).modifier_type = mod
-            else:
-                row.label(text="")
-
-            if next_mod_1[0]:
-                icon = next_mod_1[1] if prefs.use_icons_in_favourites else 'NONE'
-                row.operator("object.ml_modifier_add", text=next_mod_1[0],
-                                icon=icon).modifier_type = next_mod_1[2]
-            else:
-                row.label(text="")
-
-            if place_three_per_row:
-                if next_mod_2[0]:
-                    icon = next_mod_2[1] if prefs.use_icons_in_favourites else 'NONE'
-                    row.operator("object.ml_modifier_add", text=next_mod_2[0],
-                                icon=icon).modifier_type = next_mod_2[2]
+            
+            for mod in row_modifiers:
+                if mod[0]:
+                    icon = mod[1] if show_icons else 'NONE'
+                    row.operator("object.ml_modifier_add", text=mod[0], 
+                                 icon=icon).modifier_type = mod[2]
                 else:
                     row.label(text="")
+            
+            for _ in range(buttons_per_row - len(row_modifiers)):
+                row.label(text="")
 
 
 def _modifier_search_and_menu(layout, object, new_menu=False):
@@ -93,31 +82,29 @@ def _modifier_search_and_menu(layout, object, new_menu=False):
     row.enabled = ob.library is None or ob.override_library is not None
 
     if ob.type == 'MESH':
+        # row.operator("wm.search_single_menu", text="Search for Modifier", icon='VIEWZOOM').menu_idname = "OBJECT_MT_modifier_add"
         row.prop_search(ml_props, "modifier_to_add_from_search", ml_props, "mesh_modifiers",
-                        text="", icon='MODIFIER')
+                        text="", icon='VIEWZOOM')
     elif ob.type in {'CURVE', 'FONT'}:
         row.prop_search(ml_props, "modifier_to_add_from_search", ml_props, "curve_text_modifiers",
-                        text="", icon='MODIFIER')
+                        text="", icon='VIEWZOOM')
     elif ob.type == 'CURVES':
         row.prop_search(ml_props, "modifier_to_add_from_search", ml_props, "curves_modifiers",
-                        text="", icon='MODIFIER')
+                        text="", icon='VIEWZOOM')
     elif ob.type == 'LATTICE':
         row.prop_search(ml_props, "modifier_to_add_from_search", ml_props, "lattice_modifiers",
-                        text="", icon='MODIFIER')
+                        text="", icon='VIEWZOOM')
     elif ob.type == 'POINTCLOUD':
         row.prop_search(ml_props, "modifier_to_add_from_search", ml_props, "pointcloud_modifiers",
-                        text="", icon='MODIFIER')
+                        text="", icon='VIEWZOOM')
     elif ob.type == 'SURFACE':
         row.prop_search(ml_props, "modifier_to_add_from_search", ml_props, "surface_modifiers",
-                        text="", icon='MODIFIER')
+                        text="", icon='VIEWZOOM')
     elif ob.type == 'VOLUME':
         row.prop_search(ml_props, "modifier_to_add_from_search", ml_props, "volume_modifiers",
-                        text="", icon='MODIFIER')
+                        text="", icon='VIEWZOOM')
 
-    if new_menu:
-        sub = row.row(align=True)
-    else:
-        sub = row.row(align=False)
+    sub = row.row(align=new_menu)
     sub.menu("OBJECT_MT_ml_add_modifier_menu")
     sub.operator("wm.call_menu", text="", icon='ADD').name = "OBJECT_MT_modifier_add"
     return sub

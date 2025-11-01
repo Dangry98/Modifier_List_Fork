@@ -32,12 +32,12 @@ def fill_prefs(prefs_dict, prefs):
     for prop in prefs_dict.keys():
         if prop not in prefs.__annotations__:
             continue
+        
+        if prop == "flip_axis" and prefs_dict[prop] == []: # Workaround error if old prefs are used in 4.4
+            continue
 
         prop_in_prefs = getattr(prefs, prop)
 
-        if prop == "flip_axis" and prefs_dict[prop] == []: # fixes error if old prefs are used in 4.4
-            continue
-        
         if isinstance(prop_in_prefs, PropertyGroup):
             fill_prefs(prefs_dict[prop], prop_in_prefs)
         else:
@@ -491,13 +491,14 @@ class Preferences(AddonPreferences):
 
     favourites_per_row_items = [
         ("2", "2", "", 1),
-        ("3", "3", "", 2)
+        ("3", "3", "", 2),
+        ("4", "4", "", 3),
     ]
     favourites_per_row: EnumProperty(
         items=favourites_per_row_items,
         name="Favourites Per Row",
         description="The number of favourites per row",
-        default="2",
+        default="3",
         update=prefs_callback)
 
     auto_sort_favourites_when_choosing_from_menu: BoolProperty(
@@ -520,7 +521,7 @@ class Preferences(AddonPreferences):
     modifier_12: StringProperty(description="Add a favourite modifier", update=prefs_callback)
 
     use_icons_in_favourites: BoolProperty(
-        name="Use Icons In Favourites",
+        name="Show Icons In Favourites",
         description="Use icons in favourite modifier buttons",
         default=True,
         update=prefs_callback)
@@ -718,13 +719,13 @@ class Preferences(AddonPreferences):
             split.label(text="Favourites Per Row")
             split.row().prop(self, "favourites_per_row", expand=True)
 
-            box.separator()
+            # box.separator()
 
             favourite_modifiers_configuration_layout(context, box)
 
-            box.separator()
+            # box.separator() # wasted space
 
-            box.prop(self, "use_icons_in_favourites")
+            # box.prop(self, "use_icons_in_favourites")
 
         # === General ===
         _, box = box_with_header(layout, "General", prefs_ui_props, "general_expand")

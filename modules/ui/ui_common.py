@@ -38,8 +38,6 @@ def favourite_modifiers_configuration_layout(context, layout):
     if ml_props.preferences_ui_props.favourite_modifiers_menu_expand:
         box.prop(prefs, "auto_sort_favourites_when_choosing_from_menu")
 
-        box.separator()
-
         row = box.row()
         row.alignment = 'LEFT'
 
@@ -70,8 +68,7 @@ def favourite_modifiers_configuration_layout(context, layout):
         for name, icon, _ in modifier_categories.ALL_SIMULATE_NAMES_ICONS_TYPES:
             col.operator("ui.ml_favourite_modifier_toggle", text=name, icon=icon,
                          depress=name in favourite_mods).modifier = name
-
-        layout.separator()
+        # layout.separator()
 
     # === Favourite slots ===
 
@@ -81,10 +78,12 @@ def favourite_modifiers_configuration_layout(context, layout):
 
     active_slot_index = ml_props.active_favourite_modifier_slot_index
 
-    # Draw 2 or 3 property searches per row
+  # Draw 2, 3, or 4 property searches per row
     for i, attr in enumerate(favourite_mod_attr_names):
-        if (i == 0 or (prefs.favourites_per_row == '2' and i % 2 == 0)
-                or (prefs.favourites_per_row == '3' and i % 3 == 0)):
+        if (i == 0 or 
+            (prefs.favourites_per_row == '2' and i % 2 == 0) or
+            (prefs.favourites_per_row == '3' and i % 3 == 0) or
+            (prefs.favourites_per_row == '4' and i % 4 == 0)):
             split = col.split(align=True)
 
         sub_row = split.row(align=True)
@@ -92,6 +91,8 @@ def favourite_modifiers_configuration_layout(context, layout):
         sub_row.operator("ui.ml_active_favourite_modifier_slot_set", icon=icon, text="",
                          depress=i == active_slot_index).index = i
         sub_row.prop_search(prefs, attr, ml_props, "all_modifiers", text="", icon='MODIFIER')
+    col.prop(prefs, "use_icons_in_favourites")
+    
 
     sub = row.column(align=True)
 
@@ -99,8 +100,8 @@ def favourite_modifiers_configuration_layout(context, layout):
 
     sub.separator()
 
-    sub.operator("ui.ml_active_favourite_modifier_move_up", icon='TRIA_UP', text="")
-    sub.operator("ui.ml_active_favourite_modifier_move_down", icon='TRIA_DOWN', text="")
+    sub.operator("ui.ml_active_favourite_modifier_move_down", icon='TRIA_RIGHT', text="")
+    sub.operator("ui.ml_active_favourite_modifier_move_up", icon='TRIA_LEFT', text="")
 
     sub.separator(factor=2)
 
