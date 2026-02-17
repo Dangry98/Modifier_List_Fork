@@ -1214,16 +1214,30 @@ class DATA_PT_modifiers:
 
         scene = context.scene
         engine = context.engine
-        show_adaptive_options = (
-            engine == 'CYCLES' and md == ob.modifiers[-1]
-            and scene.cycles.feature_set == 'EXPERIMENTAL' and md.use_limit_surface
-        )
+        show_adaptive_options = False
+
+        if BLENDER_VERSION_MAJOR_POINT_MINOR >= 5.0:
+            # Blender 5.0 has only Scene dicing rate, and adaptive_src gives source for modifier in Blender 5.0 +
+            ob_dicing_rate = 1.0 
+            adaptive_src = md
+            show_adaptive_options = (
+                engine == 'CYCLES'  
+                and md.use_limit_surface and( BLENDER_VERSION_MAJOR_POINT_MINOR >= 5.0 or scene.cycles.feature_set == 'EXPERIMENTAL')
+            )
+
+        else:
+            ob_dicing_rate = ob.cycles.dicing_rate
+            adaptive_src = ob.cycles
+            show_adaptive_options = (
+                engine == 'CYCLES' and md == ob.modifiers[-1]
+                and scene.cycles.feature_set == 'EXPERIMENTAL' and md.use_limit_surface
+            )
 
         if show_adaptive_options:
             col.label(text="Render:")
-            col.prop(ob.cycles, "use_adaptive_subdivision", text="Adaptive")
-            if ob.cycles.use_adaptive_subdivision:
-                col.prop(ob.cycles, "dicing_rate")
+            col.prop(adaptive_src, "use_adaptive_subdivision", text="Adaptive")
+            if adaptive_src.use_adaptive_subdivision:
+                col.prop(adaptive_src, "dicing_rate")
             else:
                 col.prop(md, "render_levels", text="Levels")
 
@@ -1240,13 +1254,13 @@ class DATA_PT_modifiers:
             sub.prop(md, "levels", text="Viewport")
 
         sub = col.column()
-        sub.active = (not show_adaptive_options) or (not ob.cycles.use_adaptive_subdivision)
+        sub.active = (not show_adaptive_options) or (not adaptive_src.use_adaptive_subdivision)
         sub.prop(md, "quality")
 
         col = split.column()
 
         sub = col.column()
-        sub.active = (not show_adaptive_options) or (not ob.cycles.use_adaptive_subdivision)
+        sub.active = (not show_adaptive_options) or (not adaptive_src.use_adaptive_subdivision)
         sub.label(text="UV Smooth:")
         sub.prop(md, "uv_smooth", text="")
         sub.label(text="Boundary Smooth:")
@@ -1255,20 +1269,20 @@ class DATA_PT_modifiers:
         col.prop(md, "show_only_control_edges")
 
         sub = col.column()
-        sub.active = (not show_adaptive_options) or (not ob.cycles.use_adaptive_subdivision)
+        sub.active = (not show_adaptive_options) or (not adaptive_src.use_adaptive_subdivision)
         sub.prop(md, "use_limit_surface")
         sub.prop(md, "use_creases")
         sub.prop(md, "use_custom_normals")
 
-        if show_adaptive_options and ob.cycles.use_adaptive_subdivision:
+        if show_adaptive_options and adaptive_src.use_adaptive_subdivision:
             col = layout.column(align=True)
             col.scale_y = 0.6
             col.separator()
             col.label(text="Final Dicing Rate:")
             col.separator()
 
-            render = max(scene.cycles.dicing_rate * ob.cycles.dicing_rate, 0.1)
-            preview = max(scene.cycles.preview_dicing_rate * ob.cycles.dicing_rate, 0.1)
+            render = max(scene.cycles.dicing_rate * ob_dicing_rate, 0.1)
+            preview = max(scene.cycles.preview_dicing_rate * ob_dicing_rate, 0.1)
             col.label(text=f"Render {render:.2f} px, Preview {preview:.2f} px")
 
     def SURFACE(self, layout, _ob, _md):
